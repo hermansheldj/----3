@@ -147,6 +147,7 @@ async def main():
     dp.callback_query.register(cancel_callback, F.data == "cancel")
     dp.callback_query.register(add_cabinet_step1, F.data == "add")
     dp.callback_query.register(select_cabinet, F.data.regexp(r"^select_\d+$"))
+    dp.callback_query.register(select_cabinet, F.data.regexp(r"^cabinet_\d+$"))
     dp.callback_query.register(back_to_main, F.data == "back_to_main")
     dp.callback_query.register(delete_cabinet_start, F.data.regexp(r"delete_\d+"))
     dp.callback_query.register(delete_cabinet_confirm, F.data.regexp(r"confirm_delete_\d+"))
@@ -162,7 +163,7 @@ async def main():
     dp.callback_query.register(show_triggers, F.data.regexp(r"show_triggers_\d+"))
     dp.callback_query.register(edit_trigger_start, F.data.regexp(r"edit_trigger_\d+_(real|cpa|total)"))
     dp.callback_query.register(show_interval_menu, F.data.regexp(r"set_interval_menu_\d+_(real|cpa|total)"))
-    dp.callback_query.register(set_interval, F.data.regexp(r"set_interval_\d+_(real|cpa|total)_\d+"))
+    dp.callback_query.register(set_interval, F.data.regexp(r"^set_interval_\d+_(real|cpa|total)_\d+$"))
     
     # Регистрация обработчиков состояний
     dp.message.register(add_cabinet_step2, AddCabinet.name)
@@ -184,6 +185,7 @@ async def main():
     dp.callback_query.register(admin_access_user, F.data.regexp(r"^admin_access_user_\d+$"))
     dp.callback_query.register(admin_access_toggle, F.data.regexp(r"^admin_access_toggle_\d+_\d+$"))
     dp.callback_query.register(request_access_callback, F.data.regexp(r"^request_access_\d+$"))
+    dp.callback_query.register(admin_menu, F.data == "admin_back")
     
     # Запуск бота
     print("🤖 Бот запущен...")

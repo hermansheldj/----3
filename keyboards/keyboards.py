@@ -84,46 +84,33 @@ def trigger_type_keyboard(cabinet_id: int) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")]
     ])
 
-def trigger_list_keyboard(cabinet_id: int, triggers: list) -> InlineKeyboardMarkup:
+def trigger_list_keyboard(cab_id, triggers):
     kb = []
-    for trig in triggers:
-        tname = {'real': 'Основной', 'cpa': 'CPA', 'total': 'Общий'}.get(trig['trigger_type'], trig['trigger_type'])
+    for t in triggers:
+        tname = {'real': 'Основной', 'cpa': 'CPA', 'total': 'Общий'}.get(t['trigger_type'], t['trigger_type'])
         kb.append([
-            InlineKeyboardButton(
-                text=f"{tname}: {trig['threshold']:.2f} ₽ ✏️ Изменить",
-                callback_data=f"edit_trigger_{cabinet_id}_{trig['trigger_type']}"
-            ),
-            InlineKeyboardButton(
-                text="🗑 Удалить",
-                callback_data=f"delete_trigger_{cabinet_id}_{trig['trigger_type']}"
-            ),
-            InlineKeyboardButton(
-                text="⏰ Частота уведомлений",
-                callback_data=f"set_interval_menu_{cabinet_id}_{trig['trigger_type']}"
-            )
+            InlineKeyboardButton(text=f"✏️ Изменить {tname}", callback_data=f"edit_trigger_{cab_id}_{t['trigger_type']}"),
+            InlineKeyboardButton(text="⚙️ Интервал уведомлений", callback_data=f"set_interval_menu_{cab_id}_{t['trigger_type']}"),
+            InlineKeyboardButton(text="🗑 Удалить", callback_data=f"delete_trigger_{cab_id}_{t['trigger_type']}")
         ])
-    kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data=f"select_{cabinet_id}")])
+    kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data=f"cabinet_{cab_id}")])
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
-def notification_interval_keyboard(trigger_type: str, cabinet_id: int, current_value: int) -> InlineKeyboardMarkup:
+def notification_interval_keyboard(trigger_type, cab_id, current_value=0):
     intervals = [
-        (0, "❌ Без повторений"),
-        (5, "5 минут"),
-        (15, "15 минут"),
-        (30, "30 минут"),
-        (60, "1 час"),
-        (180, "3 часа"),
-        (360, "6 часов"),
-        (720, "12 часов"),
-        (1440, "24 часа")
+        (0, "🔁 Не напоминать повторно"),
+        (60, "⏰ Через 1 час"),
+        (180, "⏰ Через 3 часа"),
+        (360, "⏰ Раз в 6 часов"),
+        (720, "⏰ Раз в 12 часов"),
     ]
-    kb = []
-    for val, text in intervals:
-        if val == current_value:
-            text = f"✅ {text}"
-        kb.append([InlineKeyboardButton(text=text, callback_data=f"set_interval_{cabinet_id}_{trigger_type}_{val}")])
-    kb.append([InlineKeyboardButton(text="🔙 Назад", callback_data=f"show_triggers_{cabinet_id}")])
-    return InlineKeyboardMarkup(inline_keyboard=kb)
+    buttons = [
+        [InlineKeyboardButton(
+            text=f"{label}{' ✅' if minutes == current_value else ''}",
+            callback_data=f"set_interval_{cab_id}_{trigger_type}_{minutes}"
+        )] for minutes, label in intervals
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def admin_main_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[

@@ -606,43 +606,23 @@ async def show_interval_menu(callback: types.CallbackQuery):
             reply_markup=notification_interval_keyboard(trigger_type, cab_id, current_value)
         )
 
-# Обработчик выбора интервала
 async def set_interval(callback: types.CallbackQuery):
     await callback.answer()
-    data = getattr(callback, 'data', None)
-    user_id = getattr(getattr(callback, 'from_user', None), 'id', None)
-    if not data or user_id is None:
-        await callback.answer("Ошибка: не удалось определить триггер.", show_alert=True)
-        return
-    try:
-        parts = data.split('_')
-        cab_id = int(parts[2])
-        trigger_type = parts[3]
-        val = int(parts[4])
-    except Exception:
-        await callback.answer("Ошибка: неверный формат данных.", show_alert=True)
-        return
-    triggers = [t for t in get_triggers_for_user(user_id) if t['cabinet_id'] == cab_id and t['trigger_type'] == trigger_type]
+    data = callback.data
+    parts = data.split('_')
+    cab_id = int(parts[2])
+    trigger_type = parts[3]
+    val = int(parts[4])
+    triggers = [t for t in get_triggers_for_user(callback.from_user.id) if t['cabinet_id'] == cab_id and t['trigger_type'] == trigger_type]
     if not triggers:
         await callback.answer("Триггер не найден.", show_alert=True)
         return
     threshold = triggers[0]['threshold']
-    save_trigger(user_id, cab_id, trigger_type, threshold, repeat_interval_minutes=val)
-    # После обновления возвращаем пользователя в меню триггеров
-    all_triggers = [t for t in get_triggers_for_user(user_id) if t['cabinet_id'] == cab_id]
-    if not all_triggers:
-        text = "🔔 У вас нет триггеров для этого кабинета."
-        kb = cabinet_detail_keyboard(cab_id)
-    else:
-        text = "🔔 Ваши триггеры:\n"
-        for t in all_triggers:
-            tname = {'real': 'Основной', 'cpa': 'CPA', 'total': 'Общий'}.get(t['trigger_type'], t['trigger_type'])
-            text += f"• {tname}: {t['threshold']:.2f} ₽\n"
-        kb = trigger_list_keyboard(cab_id, all_triggers)
-    if callback.message is not None and hasattr(callback.message, 'edit_text'):
-        await callback.message.edit_text(text, reply_markup=kb)
-
-# ...дальнейшие шаги FSM для добавления кабинета... 
+    save_trigger(callback.from_user.id, cab_id, trigger_type, threshold, repeat_interval_minutes=val)
+    await callback.message.edit_text(
+        f"Интервал уведомлений установлен: {'Не напоминать повторно' if val == 0 else f'{val // 60} ч.'}",
+        reply_markup=trigger_list_keyboard(cab_id, get_triggers_for_user(callback.from_user.id))
+    )
 
 def is_admin(user_id):
     users = get_all_users()
