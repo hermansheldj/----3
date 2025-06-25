@@ -28,14 +28,13 @@ async def cabinets_keyboard(user_id: int, active_idx: Optional[int] = None) -> I
     ])
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
-def cabinet_detail_keyboard(cabinet_id: int) -> InlineKeyboardMarkup:
-    """Создает клавиатуру для детального просмотра кабинета"""
+def cabinet_detail_keyboard(cab_id):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✏️ Переименовать", callback_data=f"rename_{cabinet_id}"),
-         InlineKeyboardButton(text="🗑 Удалить", callback_data=f"delete_{cabinet_id}")],
-        [InlineKeyboardButton(text="📊 Баланс", callback_data=f"balance_{cabinet_id}")],
-        [InlineKeyboardButton(text="🔔 Добавить триггер", callback_data=f"add_trigger_{cabinet_id}")],
-        [InlineKeyboardButton(text="🔔 Мои триггеры", callback_data=f"show_triggers_{cabinet_id}")],
+        [InlineKeyboardButton(text="✏️ Переименовать", callback_data=f"rename_{cab_id}"),
+         InlineKeyboardButton(text="🗑 Удалить", callback_data=f"delete_{cab_id}")],
+        [InlineKeyboardButton(text="📊 Баланс", callback_data=f"balance_{cab_id}")],
+        [InlineKeyboardButton(text="🔔 Триггеры", callback_data=f"show_triggers_{cab_id}")],
+        [InlineKeyboardButton(text="🤖 Автоответ", callback_data=f"autoreply_{cab_id}")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="cabinets")]
     ])
 

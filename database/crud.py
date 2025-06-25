@@ -400,3 +400,45 @@ def remove_cabinet_by_id(cabinet_id: int) -> bool:
     conn.commit()
     conn.close()
     return True 
+
+def ensure_autoreply_table():
+    conn = sqlite3.connect('db.sqlite3')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS autoreply_settings (
+            cabinet_id INTEGER PRIMARY KEY,
+            enabled INTEGER DEFAULT 0,
+            text TEXT DEFAULT ''
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+ensure_autoreply_table()
+
+def set_autoreply_settings(cabinet_id, enabled, text):
+    conn = sqlite3.connect('db.sqlite3')
+    c = conn.cursor()
+    c.execute('''
+        INSERT OR REPLACE INTO autoreply_settings (cabinet_id, enabled, text)
+        VALUES (?, ?, ?)
+    ''', (cabinet_id, int(enabled), text))
+    conn.commit()
+    conn.close()
+
+def get_autoreply_settings(cabinet_id):
+    conn = sqlite3.connect('db.sqlite3')
+    c = conn.cursor()
+    c.execute('SELECT enabled, text FROM autoreply_settings WHERE cabinet_id = ?', (cabinet_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return {'enabled': bool(row[0]), 'text': row[1]}
+    return {'enabled': False, 'text': ''}
+
+def delete_trigger(user_id: int, cabinet_id: int, trigger_type: str):
+    conn = sqlite3.connect('db.sqlite3')
+    c = conn.cursor()
+    c.execute('DELETE FROM triggers WHERE user_id = ? AND cabinet_id = ? AND trigger_type = ?', (user_id, cabinet_id, trigger_type))
+    conn.commit()
+    conn.close() 

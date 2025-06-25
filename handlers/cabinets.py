@@ -3,12 +3,13 @@ from aiogram.fsm.context import FSMContext
 from states.states import AddCabinet, RenameCabinet, DeleteCabinet, AddTrigger, EditTrigger
 from keyboards.keyboards import cabinets_keyboard, cancel_keyboard, cabinet_detail_keyboard, confirm_keyboard, cabinets_menu_keyboard, main_menu_keyboard, trigger_type_keyboard, trigger_list_keyboard, notification_interval_keyboard
 from database.message_manager import send_and_cleanup, edit_and_cleanup
-from database.crud import save_trigger, get_triggers_for_user, add_cabinet, get_user_cabinets, get_accessible_cabinets, get_all_users, remove_cabinet_by_index, update_cabinet_name_by_index, remove_cabinet_by_id
+from database.crud import save_trigger, get_triggers_for_user, add_cabinet, get_user_cabinets, get_accessible_cabinets, get_all_users, remove_cabinet_by_index, update_cabinet_name_by_index, remove_cabinet_by_id, set_autoreply_settings, get_autoreply_settings, delete_trigger
 import logging
 import aiogram
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from utils.permissions import is_admin
+from aiogram.fsm.state import State, StatesGroup
 
 async def add_cabinet_step1(callback: types.CallbackQuery, state: FSMContext):
     """Начало добавления кабинета - запрос названия"""
@@ -495,7 +496,10 @@ async def show_triggers(callback: types.CallbackQuery):
     logging.info(f"show_triggers: found {len(triggers)} triggers for cabinet {cab_id}: {triggers}")
     if not triggers:
         text = "🔔 У вас нет триггеров для этого кабинета."
-        kb = cabinet_detail_keyboard(cab_id)
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="➕ Добавить триггер", callback_data=f"add_trigger_{cab_id}")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data=f"cabinet_{cab_id}")]
+        ])
     else:
         text = "🔔 Ваши триггеры:\n"
         for t in triggers:
@@ -629,4 +633,84 @@ def is_admin(user_id):
     for u in users:
         if u[0] == user_id and u[2] == 'admin' and u[3] == 1:
             return True
-    return False 
+    return False
+
+class AutoReplyState(StatesGroup):
+    text = State()
+
+# Клавиатура для управления автоответом
+def autoreply_keyboard(cab_id, enabled):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="✅ Автоответ включён" if enabled else "❌ Автоответ выключен",
+            callback_data=f"toggle_autoreply_{cab_id}"
+        )],
+        [InlineKeyboardButton(text="✏️ Изменить текст автоответа", callback_data=f"edit_autoreply_text_{cab_id}")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data=f"cabinet_{cab_id}")]
+    ])
+
+# Обработчик кнопки управления автоответом
+async def show_autoreply_settings(callback: types.CallbackQuery):
+    await callback.answer()
+    data = callback.data
+    cab_id = int(data.split('_')[-1])
+    settings = get_autoreply_settings(cab_id)
+    await callback.message.edit_text(
+        f"⚙️ Настройки автоответа:\n\nСтатус: {'Включён' if settings['enabled'] else 'Выключен'}\nТекст: {settings['text'] or '—'}",
+        reply_markup=autoreply_keyboard(cab_id, settings['enabled'])
+    )
+
+# Включить/выключить автоответ
+async def toggle_autoreply(callback: types.CallbackQuery):
+    await callback.answer()
+    data = callback.data
+    cab_id = int(data.split('_')[-1])
+    settings = get_autoreply_settings(cab_id)
+    set_autoreply_settings(cab_id, not settings['enabled'], settings['text'])
+    await show_autoreply_settings(callback)
+
+# Изменить текст автоответа
+async def edit_autoreply_text(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+    cab_id = int(callback.data.split('_')[-1])
+    await state.update_data(cab_id=cab_id)
+    await callback.message.edit_text("Введи новый текст автоответа:")
+    await state.set_state(AutoReplyState.text)
+
+async def save_autoreply_text(msg: types.Message, state: FSMContext):
+    text = msg.text.strip()
+    data = await state.get_data()
+    cab_id = data.get('cab_id')
+    settings = get_autoreply_settings(cab_id)
+    set_autoreply_settings(cab_id, settings['enabled'], text)
+    await msg.answer(f"Текст автоответа обновлён!", reply_markup=autoreply_keyboard(cab_id, settings['enabled']))
+    await state.clear()
+
+async def delete_trigger_callback(callback: types.CallbackQuery):
+    await callback.answer()
+    data = callback.data
+    user_id = getattr(getattr(callback, 'from_user', None), 'id', None)
+    if not data or user_id is None:
+        await callback.answer("Ошибка: не удалось определить триггер.", show_alert=True)
+        return
+    try:
+        parts = data.split('_')
+        cab_id = int(parts[2])
+        trigger_type = parts[3]
+    except Exception:
+        await callback.answer("Ошибка: неверный формат данных.", show_alert=True)
+        return
+    delete_trigger(user_id, cab_id, trigger_type)
+    # Показываем обновлённый список триггеров
+    all_triggers = get_triggers_for_user(user_id)
+    triggers = [t for t in all_triggers if t['cabinet_id'] == cab_id]
+    if not triggers:
+        text = "🔔 У вас нет триггеров для этого кабинета."
+        kb = cabinet_detail_keyboard(cab_id)
+    else:
+        text = "🔔 Ваши триггеры:\n"
+        for t in triggers:
+            tname = {'real': 'Основной', 'cpa': 'CPA', 'total': 'Общий'}.get(t['trigger_type'], t['trigger_type'])
+            text += f"• {tname}: {t['threshold']:.2f} ₽\n"
+        kb = trigger_list_keyboard(cab_id, triggers)
+    await callback.message.edit_text(text, reply_markup=kb) 

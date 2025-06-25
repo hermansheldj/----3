@@ -22,7 +22,7 @@ from handlers.cabinets import (
     select_cabinet, back_to_main, delete_cabinet_start, delete_cabinet_confirm,
     rename_cabinet_start, rename_cabinet_finish, cancel_callback, show_cabinets_menu, add_cabinet_start,
     add_trigger_start, add_trigger_type, add_trigger_threshold, show_triggers, edit_trigger_start, edit_trigger_value,
-    show_interval_menu, set_interval
+    show_interval_menu, set_interval, show_autoreply_settings, toggle_autoreply, edit_autoreply_text, save_autoreply_text, AutoReplyState, delete_trigger_callback
 )
 from handlers.statistics import show_statistics, show_cabinet_balance, show_statistics_menu
 from handlers.admin import (
@@ -164,6 +164,10 @@ async def main():
     dp.callback_query.register(edit_trigger_start, F.data.regexp(r"edit_trigger_\d+_(real|cpa|total)"))
     dp.callback_query.register(show_interval_menu, F.data.regexp(r"set_interval_menu_\d+_(real|cpa|total)"))
     dp.callback_query.register(set_interval, F.data.regexp(r"^set_interval_\d+_(real|cpa|total)_\d+$"))
+    dp.callback_query.register(show_autoreply_settings, F.data.regexp(r"^autoreply_\d+$"))
+    dp.callback_query.register(toggle_autoreply, F.data.regexp(r"^toggle_autoreply_\d+$"))
+    dp.callback_query.register(edit_autoreply_text, F.data.regexp(r"^edit_autoreply_text_\d+$"))
+    dp.callback_query.register(delete_trigger_callback, F.data.regexp(r"^delete_trigger_\d+_(real|cpa|total)$"))
     
     # Регистрация обработчиков состояний
     dp.message.register(add_cabinet_step2, AddCabinet.name)
@@ -173,6 +177,7 @@ async def main():
     dp.message.register(rename_cabinet_finish, RenameCabinet.new_name)
     dp.message.register(add_trigger_threshold, AddTrigger.threshold)
     dp.message.register(edit_trigger_value, EditTrigger.value)
+    dp.message.register(save_autoreply_text, AutoReplyState.text)
     
     # Регистрация обработчиков админ-панели
     dp.message.register(admin_menu, Command("admin"))

@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 from config import AVITO_API_BASE_URL, AVITO_BALANCE_ENDPOINT
 from database.crud import get_token, save_token
 from datetime import datetime
+import requests
 
 class AvitoAPI:
     """Класс для работы с API Авито"""
@@ -339,6 +340,21 @@ class AvitoAPI:
         stats_text += f"\nОбновлено: {current_time}"
 
         return stats_text
+
+def get_new_messages(access_token, advertiser_id):
+    url = f"https://api.avito.ru/core/v1/accounts/{advertiser_id}/messages"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+    return resp.json().get("messages", [])
+
+def send_avito_reply(access_token, advertiser_id, dialog_id, text):
+    url = f"https://api.avito.ru/core/v1/accounts/{advertiser_id}/dialogs/{dialog_id}/messages"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    data = {"text": text}
+    resp = requests.post(url, headers=headers, json=data)
+    resp.raise_for_status()
+    return resp.json()
 
 # Создаем глобальный экземпляр API
 avito_api = AvitoAPI() 
