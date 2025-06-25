@@ -1,8 +1,8 @@
 from aiogram import types
 from aiogram.fsm.context import FSMContext
-from states.states import AdminPanel, AddUser, BlockUser, DeleteUser, AddCabinetGlobal
+from states.states import AdminPanel, AddUser, BlockUser, DeleteUser
 from keyboards.keyboards import admin_main_keyboard, admin_user_select_keyboard, admin_cabinet_access_keyboard, admin_clients_keyboard, admin_client_cabinets_keyboard
-from database.crud import get_all_users, add_user, find_user_by_username, set_user_active, delete_user, log_admin_action, get_admin_logs, get_user_permissions, set_user_permission, get_all_cabinets, add_global_cabinet, get_user_cabinets
+from database.crud import get_all_users, add_user, find_user_by_username, set_user_active, delete_user, log_admin_action, get_admin_logs, get_user_permissions, set_user_permission, get_all_cabinets, get_user_cabinets
 from utils.permissions import is_admin, admin_required
 
 # Проверка роли (можно вынести в отдельный декоратор)
@@ -151,16 +151,4 @@ async def admin_access_toggle(callback: types.CallbackQuery, state: FSMContext):
     set_user_permission(user_id, cabinet_id, new_access)
     cabinets = get_all_cabinets()
     permissions = get_user_permissions(user_id)
-    await callback.message.edit_text(f"Доступ к кабинетам для пользователя {user_id}:", reply_markup=admin_cabinet_access_keyboard(user_id, cabinets, permissions))
-
-@admin_required
-async def admin_add_cabinet(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await state.set_state(AddCabinetGlobal.name)
-    await callback.message.edit_text("Введите название нового кабинета:")
-
-async def admin_add_cabinet_finish(msg: types.Message, state: FSMContext):
-    name = msg.text.strip()
-    add_global_cabinet(name)
-    await msg.answer(f"Кабинет '{name}' добавлен!", reply_markup=admin_main_keyboard())
-    await state.clear() 
+    await callback.message.edit_text(f"Доступ к кабинетам для пользователя {user_id}:", reply_markup=admin_cabinet_access_keyboard(user_id, cabinets, permissions)) 

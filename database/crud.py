@@ -21,10 +21,24 @@ async def add_cabinet(user_id, name, client_id, client_secret, advertiser_id):
 
 async def get_user_cabinets(user_id):
     async with async_session() as session:
-        result = await session.execute(
-            Cabinet.__table__.select().where(Cabinet.user_id == user_id)
+        # Получаем свои кабинеты
+        own_cabs_result = await session.execute(
+            select(Cabinet).where(Cabinet.user_id == user_id)
         )
-        return result.fetchall()
+        own_cabs = own_cabs_result.scalars().all()
+        # Получаем доступные по permissions
+        perm_cabs_result = await session.execute(
+            select(Cabinet).join(Permission, Cabinet.id == Permission.cabinet_id).where(
+                Permission.user_id == user_id,
+                Permission.has_access == 1
+            )
+        )
+        perm_cabs = perm_cabs_result.scalars().all()
+        # Собираем уникальные кабинеты (по id)
+        all_cabs = {c.id: c for c in perm_cabs}
+        for c in own_cabs:
+            all_cabs[c.id] = c
+        return list(all_cabs.values())
 
 async def get_token(client_id, client_secret):
     async with async_session() as session:
@@ -375,3 +389,14 @@ async def get_accessible_cabinets(user_id):
         cabinets = result.scalars().all()
         print(f"[DEBUG] accessible cabinets for user {user_id}: {[c.name for c in cabinets]}")
         return cabinets 
+
+def remove_cabinet_by_id(cabinet_id: int) -> bool:
+    conn = sqlite3.connect('db.sqlite3')
+    c = conn.cursor()
+    # Удаляем связанные permissions
+    c.execute('DELETE FROM permissions WHERE cabinet_id = ?', (cabinet_id,))
+    # Удаляем сам кабинет
+    c.execute('DELETE FROM cabinets WHERE id = ?', (cabinet_id,))
+    conn.commit()
+    conn.close()
+    return True 

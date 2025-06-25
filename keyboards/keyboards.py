@@ -129,7 +129,6 @@ def admin_main_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="👤 Список клиентов", callback_data="admin_list")],
         [InlineKeyboardButton(text="➕ Добавить клиента", callback_data="admin_add")],
-        [InlineKeyboardButton(text="➕ Добавить кабинет", callback_data="admin_add_cabinet")],
         [InlineKeyboardButton(text="🚫 Заблокировать/разблокировать", callback_data="admin_block")],
         [InlineKeyboardButton(text="🗑 Удалить клиента", callback_data="admin_delete")],
         [InlineKeyboardButton(text="🛡️ Управление доступом", callback_data="admin_access")],

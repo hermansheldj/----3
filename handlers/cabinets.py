@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from states.states import AddCabinet, RenameCabinet, DeleteCabinet, AddTrigger, EditTrigger
 from keyboards.keyboards import cabinets_keyboard, cancel_keyboard, cabinet_detail_keyboard, confirm_keyboard, cabinets_menu_keyboard, main_menu_keyboard, trigger_type_keyboard, trigger_list_keyboard, notification_interval_keyboard
 from database.message_manager import send_and_cleanup, edit_and_cleanup
-from database.crud import save_trigger, get_triggers_for_user, add_cabinet, get_user_cabinets, get_accessible_cabinets, get_all_users, remove_cabinet_by_index, update_cabinet_name_by_index
+from database.crud import save_trigger, get_triggers_for_user, add_cabinet, get_user_cabinets, get_accessible_cabinets, get_all_users, remove_cabinet_by_index, update_cabinet_name_by_index, remove_cabinet_by_id
 import logging
 import aiogram
 from aiogram.exceptions import TelegramBadRequest
@@ -219,8 +219,8 @@ async def delete_cabinet_confirm(callback: types.CallbackQuery, state: FSMContex
         await callback.answer("Ошибка: кабинет не найден.", show_alert=True)
         return
     cab_name = cab.name
-    # Удаляем кабинет
-    # ok = remove_cabinet_by_index(user_id, idx)
+    # Удаляем кабинет по id
+    remove_cabinet_by_id(cab_id)
     message = getattr(callback, 'message', None)
     if not message:
         await callback.answer("Ошибка: не удалось получить сообщение.", show_alert=True)

@@ -26,9 +26,15 @@ from handlers.cabinets import (
 )
 from handlers.statistics import show_statistics, show_cabinet_balance, show_statistics_menu
 from handlers.admin import (
-    admin_menu, admin_list, admin_add, admin_add_username, admin_block, admin_block_username, admin_delete, admin_delete_username, admin_logs, admin_back,
-    admin_access_menu, admin_access_user, admin_access_toggle,
-    admin_add_cabinet, admin_add_cabinet_finish
+    admin_menu,
+    admin_list,
+    admin_add,
+    admin_block,
+    admin_delete,
+    admin_logs,
+    admin_access_menu,
+    admin_access_user,
+    admin_access_toggle
 )
 
 # Импорты состояний
@@ -171,20 +177,13 @@ async def main():
     dp.message.register(admin_menu, Command("admin"))
     dp.callback_query.register(admin_list, F.data == "admin_list")
     dp.callback_query.register(admin_add, F.data == "admin_add")
-    dp.message.register(admin_add_username, AddUser.username)
     dp.callback_query.register(admin_block, F.data == "admin_block")
-    dp.message.register(admin_block_username, BlockUser.username)
     dp.callback_query.register(admin_delete, F.data == "admin_delete")
-    dp.message.register(admin_delete_username, DeleteUser.username)
     dp.callback_query.register(admin_logs, F.data == "admin_logs")
-    dp.callback_query.register(admin_back, F.data == "admin_back")
-    dp.callback_query.register(admin_menu, F.data == "admin_menu")
     dp.callback_query.register(admin_access_menu, F.data == "admin_access")
     dp.callback_query.register(admin_access_user, F.data.regexp(r"^admin_access_user_\d+$"))
     dp.callback_query.register(admin_access_toggle, F.data.regexp(r"^admin_access_toggle_\d+_\d+$"))
     dp.callback_query.register(request_access_callback, F.data.regexp(r"^request_access_\d+$"))
-    dp.callback_query.register(admin_add_cabinet, F.data == "admin_add_cabinet")
-    dp.message.register(admin_add_cabinet_finish, AddCabinetGlobal.name)
     
     # Запуск бота
     print("🤖 Бот запущен...")
