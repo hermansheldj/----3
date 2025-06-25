@@ -57,6 +57,17 @@ def grant_admin_access_to_all_cabinets():
     conn.commit()
     conn.close()
 
+def update_last_alert_sent(user_id, cabinet_id, trigger_type, threshold, repeat_interval):
+    # Обновляет только last_alert_sent_at
+    from sqlite3 import connect
+    conn = connect('db.sqlite3')
+    c = conn.cursor()
+    c.execute('''
+        UPDATE triggers SET last_alert_sent_at = ? WHERE user_id = ? AND cabinet_id = ? AND trigger_type = ?
+    ''', (int(time.time()), user_id, cabinet_id, trigger_type))
+    conn.commit()
+    conn.close()
+
 async def trigger_checker(bot):
     while True:
         try:
@@ -66,7 +77,6 @@ async def trigger_checker(bot):
                 cabs = await get_accessible_cabinets(user_id)
                 for trig in triggers:
                     cabinet_id = trig['cabinet_id']
-                    # Находим кабинет по cabinet_id
                     cab = next((c for c in cabs if c.id == cabinet_id), None)
                     if not cab:
                         continue
@@ -75,7 +85,6 @@ async def trigger_checker(bot):
                     threshold = trig['threshold']
                     repeat_interval = trig.get('repeat_interval_minutes', 0) or 0
                     last_alert = trig.get('last_alert_sent_at')
-                    # Получаем баланс
                     balance = await avito_api.get_balance(cab.client_id, cab.client_secret, cab.advertiser_id)
                     if not balance:
                         continue
@@ -92,13 +101,11 @@ async def trigger_checker(bot):
                         continue
                     now = int(time.time())
                     if current <= threshold:
-                        # Проверка частоты уведомлений
                         should_notify = False
                         if last_alert is None:
                             should_notify = True
                         elif repeat_interval > 0 and now - last_alert >= repeat_interval * 60:
                             should_notify = True
-                        # Если repeat_interval == 0 и уже отправляли — не уведомлять повторно
                         if should_notify:
                             text = (
                                 "⚠️ *Внимание!*\n"
@@ -119,13 +126,11 @@ async def trigger_checker(bot):
                                 parse_mode='Markdown'
                             )
                             log_trigger_event(user_id, cabinet_id, trigger_type, threshold, current)
-                            # Обновляем last_alert_sent_at
-                            save_trigger(user_id, cabinet_id, trigger_type, threshold, repeat_interval)
+                            update_last_alert_sent(user_id, cabinet_id, trigger_type, threshold, repeat_interval)
                         # иначе — не уведомлять
                     else:
-                        # Баланс выше порога — сбрасываем last_alert_sent_at
-                        if last_alert:
-                            save_trigger(user_id, cabinet_id, trigger_type, threshold, repeat_interval)
+                        # Баланс выше порога — сбрасывать last_alert_sent_at не нужно
+                        pass
         except Exception as e:
             print(f"[TriggerChecker] Ошибка: {e}")
         await asyncio.sleep(300)  # 5 минут
